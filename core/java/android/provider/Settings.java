@@ -5532,6 +5532,13 @@ public final class Settings {
         @Readable
         public static final String VOLUME_KEY_CURSOR_CONTROL = "volume_key_cursor_control";
 
+	/**
+         * Toast icon
+         * @hide
+         */
+        @Readable
+        public static final String TOAST_ICON = "toast_icon";
+
         /**
          * IMPORTANT: If you add a new public settings you also have to add it to
          * PUBLIC_SETTINGS below. If the new setting is hidden you have to add
