@@ -187,4 +187,9 @@
 
   <!-- Whether device supports gestures on fingerprint sensor -->
   <java-symbol type="bool" name="config_supportsGesturesOnFingerprintSensor" />
+
+  <!-- App error dialog -->
+  <java-symbol type="id" name="aerr_copy" />
+  <java-symbol type="string" name="url_copy_success" />
+  <java-symbol type="string" name="url_copy_failed" />
 </resources>
