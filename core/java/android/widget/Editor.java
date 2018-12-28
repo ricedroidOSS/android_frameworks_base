@@ -6030,10 +6030,13 @@ public class Editor {
             } else {
                 isExpanding |= xDiff < 0;
             }
-
+            int startHorizontal = (int) (getHorizontal(layout, 0));
+            int isScrollX = (atRtl == isStartHandle())
+                    ? mTextView.getScrollX()
+                    : (mTextView.getScrollX() - startHorizontal);
             if (mTextView.getHorizontallyScrolling()) {
                 if (positionNearEdgeOfScrollingView(x, atRtl)
-                        && ((isStartHandle() && mTextView.getScrollX() != 0)
+                        && ((isStartHandle() && isScrollX != 0)
                                 || (!isStartHandle()
                                         && mTextView.canScrollHorizontally(atRtl ? -1 : 1)))
                         && ((isExpanding && ((isStartHandle() && offset < currentOffset)
