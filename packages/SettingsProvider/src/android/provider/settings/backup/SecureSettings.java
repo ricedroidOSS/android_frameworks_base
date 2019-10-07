@@ -216,6 +216,7 @@ public class SecureSettings {
         Settings.Secure.BLUETOOTH_LE_BROADCAST_PROGRAM_INFO,
         Settings.Secure.BLUETOOTH_LE_BROADCAST_CODE,
         Settings.Secure.BLUETOOTH_LE_BROADCAST_APP_SOURCE_NAME,
-        Settings.Secure.EXTENDED_MONET_THEMES
+        Settings.Secure.EXTENDED_MONET_THEMES,
+        Settings.Secure.DOZE_ON_CHARGE
     };
 }
