@@ -262,6 +262,10 @@ public class AudioService extends IAudioService.Stub
     @VisibleForTesting
     public static final int BECOMING_NOISY_DELAY_MS = 1000;
 
+    /** Broadcast intent of User Settings Loaded event */
+    private static final String USER_SETTINGS_LOADED = "android.media.USER_SETTINGS_LOADED";
+    private static final String USER_ID = "android.media.USER_ID";
+
     /**
      * Only used in the result from {@link #checkForRingerModeChange(int, int, int)}
      */
@@ -5889,7 +5893,20 @@ public class AudioService extends IAudioService.Stub
             Log.d(TAG, "Restoring device volume behavior");
         }
         restoreDeviceVolumeBehavior();
+
+        broadcastUserSettingsLoaded();
     }
+
+    /**
+     * Send broadcast intent to inform settings of new user has been applied.
+     * It is required for e.g. per user volume persistency when using a companion service to manage
+     * audio (e.g. CarAudioService)
+     */
+     private void broadcastUserSettingsLoaded() {
+         final Intent mUserSettingsLoaded = new Intent(USER_SETTINGS_LOADED);
+         mUserSettingsLoaded.putExtra(USER_ID, ActivityManager.getCurrentUser());
+         sendBroadcastToAll(mUserSettingsLoaded);
+     }
 
     private static final int[] VALID_COMMUNICATION_DEVICE_TYPES = {
         AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
