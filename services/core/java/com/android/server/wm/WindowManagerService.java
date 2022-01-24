@@ -6060,7 +6060,8 @@ public class WindowManagerService extends IWindowManager.Stub
                         "Waiting for drawn %s: removed=%b visible=%b mHasSurface=%b drawState=%d",
                         win, win.mRemoved, win.isVisible(), win.mHasSurface,
                         win.mWinAnimator.mDrawState);
-                if (win.mRemoved || !win.mHasSurface || !win.isVisibleByPolicy()) {
+                //if (win.mRemoved || !win.mHasSurface || !win.isVisibleByPolicy()) {
+                if (win.mRemoved || !win.mHasSurface || !win.isVisible()) {
                     // Window has been removed or hidden; no draw will now happen, so stop waiting.
                     ProtoLog.w(WM_DEBUG_SCREEN_ON, "Aborted waiting for drawn: %s", win);
                     container.mWaitingForDrawn.remove(win);
