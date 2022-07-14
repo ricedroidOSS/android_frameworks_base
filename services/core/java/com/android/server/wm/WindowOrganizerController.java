@@ -767,11 +767,19 @@ class WindowOrganizerController extends IWindowOrganizerController.Stub
         displayArea.forAllTasks(task -> {
             Task tr = (Task) task;
             if ((c.getChangeMask() & WindowContainerTransaction.Change.CHANGE_HIDDEN) != 0) {
-                if (tr.setForceHidden(FLAG_FORCE_HIDDEN_FOR_TASK_ORG, c.getHidden())) {
+                if (tr.setForceHidden(
+                        FLAG_FORCE_HIDDEN_FOR_TASK_ORG, c.getHidden(), false /*moveToBack*/)) {
                     effects[0] |= TRANSACT_EFFECTS_LIFECYCLE;
                 }
             }
         });
+
+        if (displayArea.asTaskDisplayArea() != null
+                && (c.getChangeMask() & WindowContainerTransaction.Change.CHANGE_HIDDEN) != 0
+                && c.getHidden()) {
+            //reset topFocusableRootTask of hidden TDA
+            displayArea.asTaskDisplayArea().clearPreferredTopFocusableRootTask();
+        }
 
         return effects[0];
     }
