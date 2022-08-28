@@ -273,6 +273,7 @@ public class InputManagerService extends IInputManager.Stub
     private final SparseArray<CursorCallbackRecord> mCursorCallbacks = new SparseArray<>();
     private final List<CursorCallbackRecord> mTempCursorCallbacksToNotify =
             new ArrayList<>();
+    private boolean mForceNullCursor = false;
 
     // State for the currently installed input filter.
     final Object mInputFilterLock = new Object();
@@ -479,6 +480,15 @@ public class InputManagerService extends IInputManager.Stub
         synchronized (mLidSwitchLock) {
             mLidSwitchCallbacks.remove(callback);
         }
+    }
+
+    @Override // Binder call
+    public void setForceNullCursor(boolean forceNullCursor) {
+        if (DEBUG) {
+            Slog.d(TAG, "setForceNullCursor: forceNullCursor=" + forceNullCursor + " callingPid="
+                    + Binder.getCallingPid());
+        }
+        mForceNullCursor = forceNullCursor;
     }
 
     @Override // Binder call
@@ -2452,6 +2462,11 @@ public class InputManagerService extends IInputManager.Stub
 
             if (!mCurrentDisplayProperties.pointerIconVisible) return;
 
+            if (mForceNullCursor) {
+                mNative.setPointerIconType(PointerIcon.TYPE_NULL);
+                return;
+            }
+
             mNative.setPointerIconType(mIconType);
         }
     }
@@ -2467,6 +2482,11 @@ public class InputManagerService extends IInputManager.Stub
             deliverCursorChanged(PointerIcon.TYPE_CUSTOM, icon);
 
             if (!mCurrentDisplayProperties.pointerIconVisible) return;
+
+            if (mForceNullCursor) {
+                mNative.setPointerIconType(PointerIcon.TYPE_NULL);
+                return;
+            }
 
             mNative.setCustomPointerIcon(mIcon);
         }
