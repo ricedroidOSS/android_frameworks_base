@@ -114,6 +114,9 @@ public class FullscreenTaskListener<T extends AutoCloseable>
         }
         if (state.mWindowDecoration == null) {
             mSyncQueue.runInSync(t -> {
+            	if (!leash.isValid()) {
+                    return;
+            	}
                 // Reset several properties back to fullscreen (PiP, for example, leaves all these
                 // properties in a bad state).
                 t.setWindowCrop(leash, null);
