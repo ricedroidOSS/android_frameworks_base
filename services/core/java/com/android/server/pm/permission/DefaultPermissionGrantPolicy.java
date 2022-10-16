@@ -87,6 +87,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -1994,7 +1995,7 @@ final class DefaultPermissionGrantPolicy {
                             mPkgRequestingPerm, newRestrictionExcemptFlags, -1, mUser);
                 }
 
-                if (newGranted != null && newGranted != mOriginalGranted) {
+                if (newGranted != null && !Objects.equals(newGranted, mOriginalGranted)) {
                     if (newGranted) {
                         NO_PM_CACHE.grantPermission(mPermission, mPkgRequestingPerm, mUser);
                     } else {
