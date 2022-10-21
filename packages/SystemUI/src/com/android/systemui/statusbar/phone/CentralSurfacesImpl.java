@@ -1197,6 +1197,10 @@ public class CentralSurfacesImpl extends CoreStartable implements
     }
 
     private void onFoldedStateChangedInternal(boolean isFolded, boolean willGoToSleep) {
+        if (mNotificationPanelViewController == null) {
+            return;
+        }
+
         // Folded state changes are followed by a screen off event.
         // By default turning off the screen also closes the shade.
         // We want to make sure that the shade status is kept after
