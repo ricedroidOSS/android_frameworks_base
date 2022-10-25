@@ -37,6 +37,7 @@ import com.android.server.wm.WindowManagerService.H;
 import com.android.server.am.ActivityManagerService;
 import com.android.server.wm.ActivityTaskSupervisor;
 import com.android.server.wm.DisplayContent;
+import android.util.BoostFramework;
 
 /**
  * 1. Adjust the top most focus display if touch down on some display.
@@ -50,12 +51,16 @@ public class TaskTapPointerEventListener implements PointerEventListener {
     private final Rect mTmpRect = new Rect();
     private int mPointerIconType = TYPE_NOT_SPECIFIED;
     public PowerManagerInternal mLocalPowerManager;
+    public BoostFramework mPerfObj = null;
 
     public TaskTapPointerEventListener(WindowManagerService service,
             DisplayContent displayContent) {
         mService = service;
         mDisplayContent = displayContent;
         mLocalPowerManager = LocalServices.getService(PowerManagerInternal.class);
+        if (mPerfObj == null) {
+            mPerfObj = new BoostFramework();
+        }
     }
 
     private void restorePointerIcon(int x, int y) {
@@ -141,8 +146,31 @@ public class TaskTapPointerEventListener implements PointerEventListener {
             }
             break;
         }
-        if (mLocalPowerManager != null) {
+        if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
            mLocalPowerManager.setPowerBoost(Boost.INTERACTION, 2000);
+        }
+        if (ActivityTaskSupervisor.mIsPerfBoostAcquired && (mPerfObj != null)) {
+            if (ActivityTaskSupervisor.mPerfHandle > 0) {
+                mPerfObj.perfLockReleaseHandler(ActivityTaskSupervisor.mPerfHandle);
+                ActivityTaskSupervisor.mPerfHandle = -1;
+            }
+            ActivityTaskSupervisor.mIsPerfBoostAcquired = false;
+        }
+        if (ActivityTaskSupervisor.mPerfSendTapHint && (mPerfObj != null)) {
+            mPerfObj.perfHint(BoostFramework.VENDOR_HINT_TAP_EVENT, null);
+            ActivityTaskSupervisor.mPerfSendTapHint = false;
+        }
+        if (RootWindowContainer.mIsPerfBoostAcquired && (mPerfObj != null)) {
+            if (RootWindowContainer.mPerfHandle > 0) {
+                mPerfObj.perfLockReleaseHandler(
+                    RootWindowContainer.mPerfHandle);
+                RootWindowContainer.mPerfHandle = -1;
+            }
+            RootWindowContainer.mIsPerfBoostAcquired = false;
+        }
+        if (RootWindowContainer.mPerfSendTapHint && (mPerfObj != null)) {
+            mPerfObj.perfHint(BoostFramework.VENDOR_HINT_TAP_EVENT, null);
+            RootWindowContainer.mPerfSendTapHint = false;
         }
     }
 

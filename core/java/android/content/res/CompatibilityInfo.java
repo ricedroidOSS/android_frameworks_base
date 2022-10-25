@@ -34,6 +34,7 @@ import android.view.InsetsState;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.util.Log;
 
 /**
  * CompatibilityInfo class keeps the information about the screen compatibility mode that the
@@ -46,6 +47,8 @@ public class CompatibilityInfo implements Parcelable {
     @UnsupportedAppUsage
     public static final CompatibilityInfo DEFAULT_COMPATIBILITY_INFO = new CompatibilityInfo() {
     };
+
+    static final String TAG = "CompatibilityInfo";
 
     /**
      * This is the number of pixels we would like to have along the
@@ -163,7 +166,6 @@ public class CompatibilityInfo implements Parcelable {
                 // Let the user decide.
                 compatFlags |= NEEDS_SCREEN_COMPAT;
             }
-
             int density = appInfo.getOverrideDensity();
             if(density != 0) {
                 applicationDensity = density;
@@ -283,6 +285,10 @@ public class CompatibilityInfo implements Parcelable {
         }
 
         mCompatibilityFlags = compatFlags;
+
+        Log.d(TAG, "mCompatibilityFlags - " + Integer.toHexString(mCompatibilityFlags));
+        Log.d(TAG, "applicationDensity - " + applicationDensity);
+        Log.d(TAG, "applicationScale - " + applicationScale);
     }
 
     private CompatibilityInfo(int compFlags,

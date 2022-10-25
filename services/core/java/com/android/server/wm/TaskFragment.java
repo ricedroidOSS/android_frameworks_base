@@ -83,6 +83,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+import android.util.BoostFramework;
 import android.util.DisplayMetrics;
 import android.util.Slog;
 import android.util.proto.ProtoOutputStream;
@@ -98,6 +99,7 @@ import android.os.PowerManagerInternal;
 import com.android.server.LocalServices;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.app.ActivityTrigger;
 import com.android.internal.protolog.common.ProtoLog;
 import com.android.internal.util.function.pooled.PooledLambda;
 import com.android.internal.util.function.pooled.PooledPredicate;
@@ -207,6 +209,10 @@ class TaskFragment extends WindowContainer<WindowContainer> {
     public PowerManagerInternal mLocalPowerManager;
     private final int POWER_BOOST_TIMEOUT_MS = Integer.parseInt(
             SystemProperties.get("persist.sys.powerhal.interaction.max", "200"));
+
+    public BoostFramework mPerf = null;
+    //ActivityTrigger
+    static final ActivityTrigger mActivityTrigger = new ActivityTrigger();
 
     // TODO(b/233177466): Move mMinWidth and mMinHeight to Task and remove usages in TaskFragment
     /**
@@ -1211,6 +1217,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
 
         if (DEBUG_SWITCH) Slog.v(TAG_SWITCH, "Resuming " + next);
 
+        //Trigger Activity Resume
+        if (mActivityTrigger != null) {
+            mActivityTrigger.activityResumeTrigger(next.intent, next.info,
+                                                   next.info.applicationInfo,
+                                                   next.occludesParent());
+        }
+
         mTaskSupervisor.setLaunchSource(next.info.applicationInfo.uid);
 
         ActivityRecord lastResumed = null;
@@ -1317,6 +1330,11 @@ class TaskFragment extends WindowContainer<WindowContainer> {
         if (mLocalPowerManager != null) {
           mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
         }
+
+        if (mPerf == null) {
+            mPerf = new BoostFramework();
+        }
+
         if (prev != null) {
             if (prev.finishing) {
                 if (DEBUG_TRANSITION) {
@@ -1326,9 +1344,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
                     anim = false;
                     dc.prepareAppTransition(TRANSIT_NONE);
                 } else {
-        	    if (mLocalPowerManager != null) {
+        	    if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
           	      mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
         	    }
+                    if(prev.getTask() != next.getTask() && mPerf != null) {
+                       mPerf.perfHint(BoostFramework.VENDOR_HINT_ANIM_BOOST,
+                           next.packageName);
+                    }
                     dc.prepareAppTransition(TRANSIT_CLOSE);
                 }
                 prev.setVisibility(false);
@@ -1340,9 +1362,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
                     anim = false;
                     dc.prepareAppTransition(TRANSIT_NONE);
                 } else {
-        	    if (mLocalPowerManager != null) {
+        	    if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
           	      mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
         	    }
+                    if(prev.getTask() != next.getTask() && mPerf != null) {
+                       mPerf.perfHint(BoostFramework.VENDOR_HINT_ANIM_BOOST,
+                           next.packageName);
+                    }
                     dc.prepareAppTransition(TRANSIT_OPEN,
                             next.mLaunchTaskBehind ? TRANSIT_FLAG_OPEN_BEHIND : 0);
                 }
@@ -1606,8 +1632,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
             return false;
         }
 
-        if (mLocalPowerManager != null) {
+        if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
            mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
+        }
+        //Trigger Activity Pause
+        if (mActivityTrigger != null) {
+            mActivityTrigger.activityPauseTrigger(prev.intent, prev.info,
+                                                  prev.info.applicationInfo);
         }
 
         ProtoLog.v(WM_DEBUG_STATES, "Moving to PAUSING: %s", prev);

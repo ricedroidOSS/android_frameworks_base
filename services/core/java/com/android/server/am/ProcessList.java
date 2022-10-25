@@ -109,6 +109,7 @@ import android.system.Os;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
+import android.util.BoostFramework;
 import android.util.DebugUtils;
 import android.util.EventLog;
 import android.util.LongSparseArray;
@@ -531,6 +532,11 @@ public final class ProcessList {
     private final int[] mZygoteSigChldMessage = new int[3];
 
     ActivityManagerGlobalLock mProcLock;
+
+    /**
+     * BoostFramework Object
+     */
+    public static BoostFramework mPerfServiceStartHint = new BoostFramework();
 
     final class IsolatedUidRange {
         @VisibleForTesting
@@ -2353,15 +2359,18 @@ public final class ProcessList {
                 storageManagerInternal.prepareStorageDirs(userId, pkgDataInfoMap.keySet(),
                         app.processName);
             }
-            if (mLocalPowerManager != null) {
-                final int POWER_BOOST_TIMEOUT_MS = Integer.parseInt(
-            SystemProperties.get("persist.sys.powerhal.interaction.max", "200"));
+            if (mPerfServiceStartHint != null) {
                 if ((hostingRecord.getType() != null)
                        && (hostingRecord.getType().equals(HostingRecord.HOSTING_TYPE_NEXT_ACTIVITY)
                                || hostingRecord.getType().equals(HostingRecord.HOSTING_TYPE_NEXT_TOP_ACTIVITY))) {
                                    //TODO: not acting on pre-activity
                     if (startResult != null) {
-                        mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
+            		if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
+                	    final int POWER_BOOST_TIMEOUT_MS = Integer.parseInt(
+            		    SystemProperties.get("persist.sys.powerhal.interaction.max", "200"));
+                            mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
+                    	}
+                        mPerfServiceStartHint.perfHint(BoostFramework.VENDOR_HINT_FIRST_LAUNCH_BOOST, app.processName, startResult.pid, BoostFramework.Launch.TYPE_START_PROC);
                     }
                 }
             }

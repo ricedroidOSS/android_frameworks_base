@@ -32,9 +32,11 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Process;
+import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Message;
 import android.os.PowerExemptionManager;
-import android.os.SystemClock;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
@@ -714,7 +716,7 @@ final class ActivityManagerConstants extends ContentObserver {
     static int TRIM_CACHE_PERCENT = 100;
     static long TRIM_ENABLE_MEMORY = 1073741824;
     public static boolean allowTrim() { return Process.getTotalMemory() < TRIM_ENABLE_MEMORY ; }
-    
+
     // The maximum number of empty app processes we will let sit around.  This will be
     // initialized in the constructor.
     public int CUR_MAX_EMPTY_PROCESSES;

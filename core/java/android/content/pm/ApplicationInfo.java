@@ -2700,7 +2700,6 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
     public int getMemtagMode() {
         return memtagMode;
     }
-
     /**
      * Returns whether the application has requested automatic zero-initialization of native heap
      * memory allocations to be enabled or disabled.
@@ -2797,6 +2796,5 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
             privateFlagsExt &= ~PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
         }
     }
-    
     /** {@hide} */ public int canOverrideRes() { return overrideRes; }
 }

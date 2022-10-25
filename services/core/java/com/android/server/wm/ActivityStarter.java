@@ -124,6 +124,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.service.voice.IVoiceInteractionSession;
 import android.text.TextUtils;
+import android.util.BoostFramework;
 import android.util.ArraySet;
 import android.util.DebugUtils;
 import android.util.Pools.SynchronizedPool;
@@ -242,6 +243,7 @@ class ActivityStarter {
     private IVoiceInteractor mVoiceInteractor;
 
     private PowerManagerInternal mLocalPowerManager;
+    public BoostFramework mPerf = null;
 
     // Last activity record we attempted to start
     private ActivityRecord mLastStartActivityRecord;
@@ -598,6 +600,7 @@ class ActivityStarter {
         mInterceptor = interceptor;
         reset(true);
         mLocalPowerManager = LocalServices.getService(PowerManagerInternal.class);
+        mPerf = new BoostFramework();
     }
 
     /**
@@ -3031,9 +3034,29 @@ class ActivityStarter {
     private void addOrReparentStartingActivity(@NonNull Task task, String reason) {
         final int POWER_BOOST_TIMEOUT_MS = Integer.parseInt(
             SystemProperties.get("persist.sys.powerhal.interaction.max", "200"));
-    	if (mLocalPowerManager != null) {
+    	if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
     	   mLocalPowerManager.setPowerBoost(Boost.INTERACTION, POWER_BOOST_TIMEOUT_MS);
     	}
+        String packageName= mService.mContext.getPackageName();
+        if (mPerf != null) {
+            if (mPerf.getPerfHalVersion() >= BoostFramework.PERF_HAL_V23) {
+                    int pkgType =
+                        mPerf.perfGetFeedback(BoostFramework.VENDOR_FEEDBACK_WORKLOAD_TYPE,
+                                                    packageName);
+                    mStartActivity.perfActivityBoostHandler =
+                        mPerf.perfHintAcqRel(mStartActivity.perfActivityBoostHandler,
+                                        BoostFramework.VENDOR_HINT_FIRST_LAUNCH_BOOST, packageName,
+                                        -1, BoostFramework.Launch.ACTIVITY_LAUNCH_BOOST, 1, pkgType);
+            } else {
+                    if (mStartActivity.perfActivityBoostHandler > 0) {
+                       Slog.i(TAG, "Activity boosted, release it firstly");
+                       mPerf.perfLockReleaseHandler(mStartActivity.perfActivityBoostHandler);
+                    }
+                mStartActivity.perfActivityBoostHandler =
+                    mPerf.perfHint(BoostFramework.VENDOR_HINT_FIRST_LAUNCH_BOOST,
+                                    packageName, -1, BoostFramework.Launch.BOOST_V1);
+            }
+        }
         TaskFragment newParent = task;
         if (mInTaskFragment != null) {
             int embeddingCheckResult = canEmbedActivity(mInTaskFragment, mStartActivity, task);

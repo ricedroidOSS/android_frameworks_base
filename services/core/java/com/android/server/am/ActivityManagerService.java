@@ -336,6 +336,8 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.util.BoostFramework;
+
 import android.view.autofill.AutofillManagerInternal;
 
 import com.android.internal.annotations.CompositeRWLock;
@@ -348,6 +350,7 @@ import com.android.internal.app.ProcessMap;
 import com.android.internal.app.SystemUserHomeActivity;
 import com.android.internal.app.procstats.ProcessState;
 import com.android.internal.app.procstats.ProcessStats;
+import com.android.internal.app.ActivityTrigger;
 import com.android.internal.content.InstallLocationUtils;
 import com.android.internal.messages.nano.SystemMessageProto.SystemMessage;
 import com.android.internal.notification.SystemNotificationChannels;
@@ -564,6 +567,12 @@ public class ActivityManagerService extends IActivityManager.Stub
             2000 * Build.HW_TIMEOUT_MULTIPLIER; // 2 seconds;
     private static final int JAVA_DUMP_MINIMUM_SIZE = 100; // 100 bytes.
 
+    /* Freq Aggr boost objects */
+    public static BoostFramework mPerfServiceStartHint = null;
+    /* UX perf event object */
+    public static BoostFramework mUxPerf = new BoostFramework();
+    public static boolean mForceStopKill = false;
+
     OomAdjuster mOomAdjuster;
 
     static final String EXTRA_TITLE = "android.intent.extra.TITLE";
@@ -595,7 +604,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     /** Run all ActivityStacks through this */
     ActivityTaskSupervisor mTaskSupervisor;
-    
+
     final InstrumentationReporter mInstrumentationReporter = new InstrumentationReporter();
 
     @CompositeRWLock({"this", "mProcLock"})
@@ -3166,6 +3175,46 @@ public class ActivityManagerService extends IActivityManager.Stub
         return mActivityTaskManager.startActivityFromRecents(taskId, bOptions);
     }
 
+    public int startActivityAsUserEmpty(Bundle options) {
+        ArrayList<String> pApps = options.getStringArrayList("start_empty_apps");
+        if (pApps != null && pApps.size() > 0) {
+            Iterator<String> apps_itr = pApps.iterator();
+            while (apps_itr.hasNext()) {
+                ProcessRecord empty_app = null;
+                String app_str = apps_itr.next();
+                if (app_str == null)
+                    continue;
+                synchronized (this) {
+                    Intent intent_l = null;
+                    try {
+                        intent_l = mContext.getPackageManager().getLaunchIntentForPackage(app_str);
+                        if (intent_l == null)
+                            continue;
+                        ActivityInfo aInfo = mTaskSupervisor.resolveActivity(intent_l, null,
+                                                                          0, null, 0, 0);
+                        if (aInfo == null)
+                            continue;
+                        empty_app = startProcessLocked(
+                            app_str,
+                            aInfo.applicationInfo,
+                            false /* knownToBeDead */,
+                            0 /* intentFlags */,
+                           sNullHostingRecord /* hostingRecord */,
+                           ZYGOTE_POLICY_FLAG_EMPTY /* zygotePolicyFlags */,
+                           false /* allowWhileBooting */,
+                           false /* isolated */);
+                        if (empty_app != null)
+                            updateOomAdjLocked(empty_app, OomAdjuster.OOM_ADJ_REASON_NONE);
+                    } catch (Exception e) {
+                        if (DEBUG_PROCESSES)
+                            Slog.w(TAG, "Exception raised trying to start app as empty " + e);
+                    }
+                }
+            }
+        }
+        return 1;
+    }
+
     /**
      * This is the internal entry point for handling Activity.finish().
      *
@@ -3342,11 +3391,19 @@ public class ActivityManagerService extends IActivityManager.Stub
                 doLowMem = false;
             }
             
-            if (mLocalPowerManager != null) {
+            if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
               // either the task will trigger the back animation or gets swipes from overview
               if (!app.mErrorState.isNotResponding() && !app.mErrorState.isCrashing()) {
                   mLocalPowerManager.setPowerBoost(Boost.INTERACTION, 2000);
               }
+            }
+
+            if (mUxPerf != null && !mForceStopKill && !app.mErrorState.isNotResponding() && !app.mErrorState.isCrashing()) {
+                if (mUxPerf.board_first_api_lvl < BoostFramework.VENDOR_T_API_LEVEL &&
+                    mUxPerf.board_api_lvl < BoostFramework.VENDOR_T_API_LEVEL) {
+                    mUxPerf.perfUXEngine_events(BoostFramework.UXE_EVENT_KILL, 0, app.processName, 0);
+                }
+                mUxPerf.perfEvent(BoostFramework.VENDOR_HINT_KILL, app.processName, 2, 0, pid);
             }
 
             EventLogTags.writeAmProcDied(app.userId, pid, app.processName, setAdj, setProcState);
@@ -4449,6 +4506,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         // A specific subset of the work done in forceStopPackageLocked(), because we are
         // intentionally not rendering the app nonfunctional; we're just halting its current
         // execution.
+        mForceStopKill = true;
         final int appId = UserHandle.getAppId(uid);
         synchronized (this) {
             synchronized (mProcLock) {
@@ -4497,6 +4555,7 @@ public class ActivityManagerService extends IActivityManager.Stub
 
             mAppErrors.resetProcessCrashTime(packageName == null, appId, userId);
         }
+        mForceStopKill = true;
 
         synchronized (mProcLock) {
             // Notify first that the package is stopped, so its process won't be restarted
@@ -4755,12 +4814,25 @@ public class ActivityManagerService extends IActivityManager.Stub
 
         EventLogTags.writeAmProcBound(app.userId, pid, app.processName);
 
-        if (mLocalPowerManager != null) {
+        if (mLocalPowerManager != null && !BoostFramework.boostFrameworkJarExists) {
           if (app.getHostingRecord() != null && app.getHostingRecord().isTopApp()) {
               mLocalPowerManager.setPowerMode(Mode.LAUNCH, true);
           } else {
               mLocalPowerManager.setPowerMode(Mode.LAUNCH, false);
           }
+        }
+
+        if (mUxPerf != null && app.getHostingRecord() != null && app.getHostingRecord().isTopApp()) {
+            if (mUxPerf.getPerfHalVersion() >= BoostFramework.PERF_HAL_V23) {
+                int pkgType = mUxPerf.perfGetFeedback(
+                                    BoostFramework.VENDOR_FEEDBACK_WORKLOAD_TYPE, app.processName);
+                mUxPerf.perfHintAcqRel(-1,
+                    BoostFramework.VENDOR_HINT_FIRST_LAUNCH_BOOST, app.processName,
+                    pid, BoostFramework.Launch.TYPE_ATTACH_APPLICATION, 1, pkgType);
+            } else {
+                mUxPerf.perfHint(BoostFramework.VENDOR_HINT_FIRST_LAUNCH_BOOST, app.processName,
+                    pid, BoostFramework.Launch.TYPE_ATTACH_APPLICATION);
+            }
         }
 
         synchronized (mProcLock) {
@@ -5185,7 +5257,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                                 String data, Bundle extras, boolean ordered,
                                 boolean sticky, int sendingUser) {
                             synchronized (mProcLock) {
-                            	mOomAdjuster.mCachedAppOptimizer.compactAllSystem();
+                                mOomAdjuster.mCachedAppOptimizer.compactAllSystem();
                                 mAppProfiler.requestPssAllProcsLPr(
                                         SystemClock.uptimeMillis(), true, false);
                             }
@@ -12477,6 +12549,28 @@ public class ActivityManagerService extends IActivityManager.Stub
             }
             app.setPid(0);
         }
+
+        // Call Preferred App
+        if (app != null) {
+            ArrayList<ApplicationExitInfo> results = new ArrayList<ApplicationExitInfo>();
+            mProcessList.mAppExitInfoTracker.getExitInfo(
+                    app.processName, app.uid, app.getPid(), 0, results);
+            if (results != null) {
+                boolean recentAppClose = false;
+                for (int i=0; i<results.size();i++) {
+                    ApplicationExitInfo appExitInfo = results.get(i);
+                    if ((appExitInfo.getReason() == ApplicationExitInfo.REASON_USER_REQUESTED
+                            || appExitInfo.getReason() == ApplicationExitInfo.REASON_USER_STOPPED)
+                                && appExitInfo.getDescription() == "remove task") {
+                        recentAppClose = true;
+                        break;
+                    }
+                }
+                if (recentAppClose) {
+                    mTaskSupervisor.startPreferredApps();
+                }
+            }
+        }
         return false;
     }
 
@@ -16501,6 +16595,11 @@ public class ActivityManagerService extends IActivityManager.Stub
             // Clean up various services by removing the user
             mBatteryStatsService.onUserRemoved(userId);
             mUserController.onUserRemoved(userId);
+        }
+
+        @Override
+        public int startActivityAsUserEmpty(Bundle options) {
+            return ActivityManagerService.this.startActivityAsUserEmpty(options);
         }
 
         @Override

@@ -279,7 +279,6 @@ void android_os_Process_setProcessGroup(JNIEnv* env, jobject clazz, int pid, jin
         signalExceptionForGroupError(env, errno ? errno : EPERM, pid);
 }
 
-
 void android_os_Process_setCgroupProcsProcessGroup(JNIEnv* env, jobject clazz, int uid, int pid, jint grp, jboolean dex2oat_only)
 {
     int fd;

@@ -230,6 +230,7 @@ import android.sysprop.SurfaceFlingerProperties;
 import android.text.format.DateUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
+import android.util.BoostFramework;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
 import android.util.MergedConfiguration;
@@ -474,6 +475,8 @@ public class WindowManagerService extends IWindowManager.Stub
     final TransitionTracer mTransitionTracer;
 
     private final DisplayAreaPolicy.Provider mDisplayAreaPolicyProvider;
+
+    private BoostFramework mPerf = null;
 
     final private KeyguardDisableHandler mKeyguardDisableHandler;
 
@@ -6149,7 +6152,13 @@ public class WindowManagerService extends IWindowManager.Stub
         }
 
         mLatencyTracker.onActionStart(ACTION_ROTATE_SCREEN);
-        if (mPowerManagerInternal != null) {
+        if (mPerf == null) {
+            mPerf = new BoostFramework();
+        }
+        if (mPerf != null) {
+            mPerf.perfHint(BoostFramework.VENDOR_HINT_ROTATION_LATENCY_BOOST, null);
+        }
+        if (mPowerManagerInternal != null && !BoostFramework.boostFrameworkJarExists) {
            mPowerManagerInternal.setPowerBoost(Boost.INTERACTION, 2000);
         }
         mExitAnimId = exitAnim;
@@ -6282,6 +6291,9 @@ public class WindowManagerService extends IWindowManager.Stub
         }
         mAtmService.endLaunchPowerMode(POWER_MODE_REASON_CHANGE_DISPLAY);
         mLatencyTracker.onActionEnd(ACTION_ROTATE_SCREEN);
+        if (mPerf != null) {
+            mPerf.perfLockRelease();
+        }
     }
 
     static int getPropertyInt(String[] tokens, int index, int defUnits, int defDps,

@@ -948,7 +948,7 @@ public class AppProfiler {
     boolean allowLowerMemLevelLocked() {
         return mAllowLowerMemLevel;
     }
-    
+
     @GuardedBy("mService")
     void setMemFactorOverrideLocked(@MemFactor int factor) {
         mMemFactorOverride = factor;
