@@ -25,6 +25,7 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_DREAM;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -1578,7 +1579,8 @@ class RecentTasks {
         for (int i = 0; i < recentsCount; i++) {
             final Task t = mTasks.get(i);
             if (task != t) {
-                if (!hasCompatibleActivityTypeAndWindowingMode(task, t)
+                if ((!isEmptyTaskOfMultiWindowingModeToFullscreen(task, t)
+                        && !hasCompatibleActivityTypeAndWindowingMode(task, t))
                         || task.mUserId != t.mUserId) {
                     continue;
                 }
@@ -1970,13 +1972,13 @@ class RecentTasks {
      * compatible. This is necessary because we currently don't persist the activity type
      * or the windowing mode with the task, so they can be undefined when restored.
      */
-    private boolean hasCompatibleActivityTypeAndWindowingMode(Task t1, Task t2) {
-        final int activityType = t1.getActivityType();
-        final int windowingMode = t1.getWindowingMode();
+    private boolean hasCompatibleActivityTypeAndWindowingMode(Task taskToAdd, Task taskToRemove) {
+        final int activityType = taskToAdd.getActivityType();
+        final int windowingMode = taskToAdd.getWindowingMode();
         final boolean isUndefinedType = activityType == ACTIVITY_TYPE_UNDEFINED;
         final boolean isUndefinedMode = windowingMode == WINDOWING_MODE_UNDEFINED;
-        final int otherActivityType = t2.getActivityType();
-        final int otherWindowingMode = t2.getWindowingMode();
+        final int otherActivityType = taskToRemove.getActivityType();
+        final int otherWindowingMode = taskToRemove.getWindowingMode();
         final boolean isOtherUndefinedType = otherActivityType == ACTIVITY_TYPE_UNDEFINED;
         final boolean isOtherUndefinedMode = otherWindowingMode == WINDOWING_MODE_UNDEFINED;
 
@@ -1988,5 +1990,22 @@ class RecentTasks {
                 || isUndefinedMode || isOtherUndefinedMode;
 
         return isCompatibleType && isCompatibleMode;
+    }
+
+    /**
+     * @return Whether the task we are going to remove is multi windowing mode and has no
+     * taskInfo or baseActivity, which means it maybe an empty task but with a recent task.
+     */
+    private boolean isEmptyTaskOfMultiWindowingModeToFullscreen(Task taskToAdd, Task taskToRemove) {
+        final int windowingMode = taskToAdd.getWindowingMode();
+        final int otherWindowingMode = taskToRemove.getWindowingMode();
+
+        // If a task has been removed in multi window mode, we shouldn't skip remove its recent task
+        // before adding a new one with fullscreen mode.
+        final boolean isMultiToFull = windowingMode == WINDOWING_MODE_FULLSCREEN
+                && otherWindowingMode == WINDOWING_MODE_MULTI_WINDOW;
+        final boolean isEmptyTask = taskToRemove.getTaskInfo() == null
+                || taskToRemove.getTaskInfo().baseActivity == null;
+        return isMultiToFull && isEmptyTask;
     }
 }
