@@ -26,6 +26,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.IWindow;
 import android.view.IWindowSession;
+import android.view.ViewRootImpl;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class WindowOnBackInvokedDispatcher implements OnBackInvokedDispatcher {
     private final TreeMap<Integer, ArrayList<OnBackInvokedCallback>>
             mOnBackInvokedCallbacks = new TreeMap<>();
     private final Checker mChecker;
+    private ViewRootImpl.BackFocusKeeper mBackFocusKeeper;
 
     public WindowOnBackInvokedDispatcher(boolean applicationCallBackEnabled) {
         mChecker = new Checker(applicationCallBackEnabled);
@@ -81,11 +83,18 @@ public class WindowOnBackInvokedDispatcher implements OnBackInvokedDispatcher {
         }
     }
 
+    public void attachToWindow(@NonNull IWindowSession windowSession, @NonNull IWindow window,
+                               @NonNull ViewRootImpl.BackFocusKeeper backFocusKeeper) {
+        mBackFocusKeeper = backFocusKeeper;
+        attachToWindow(windowSession, window);
+    }
+
     /** Detaches the dispatcher instance from its window. */
     public void detachFromWindow() {
         clear();
         mWindow = null;
         mWindowSession = null;
+        mBackFocusKeeper = null;
     }
 
     // TODO: Take an Executor for the callback to run on.
@@ -189,7 +198,7 @@ public class WindowOnBackInvokedDispatcher implements OnBackInvokedDispatcher {
                                     .ImeOnBackInvokedCallback
                                 ? ((ImeOnBackInvokedDispatcher.ImeOnBackInvokedCallback)
                                         callback).getIOnBackInvokedCallback()
-                                : new OnBackInvokedCallbackWrapper(callback);
+                                : new OnBackInvokedCallbackWrapper(callback, mBackFocusKeeper);
                 callbackInfo = new OnBackInvokedCallbackInfo(iCallback, priority);
             }
             mWindowSession.setOnBackInvokedCallbackInfo(mWindow, callbackInfo);
@@ -221,8 +230,16 @@ public class WindowOnBackInvokedDispatcher implements OnBackInvokedDispatcher {
 
     static class OnBackInvokedCallbackWrapper extends IOnBackInvokedCallback.Stub {
         private final WeakReference<OnBackInvokedCallback> mCallback;
+        private  WeakReference<ViewRootImpl.BackFocusKeeper> mBackFocusKeeper;
+
         OnBackInvokedCallbackWrapper(@NonNull OnBackInvokedCallback callback) {
             mCallback = new WeakReference<>(callback);
+        }
+
+        OnBackInvokedCallbackWrapper(@NonNull OnBackInvokedCallback callback,
+                                     ViewRootImpl.BackFocusKeeper backFocusKeeper) {
+            this(callback);
+            mBackFocusKeeper = new WeakReference<>(backFocusKeeper);
         }
 
         @Override
@@ -257,13 +274,30 @@ public class WindowOnBackInvokedDispatcher implements OnBackInvokedDispatcher {
 
         @Override
         public void onBackInvoked() throws RemoteException {
-            Handler.getMain().post(() -> {
+            Runnable r = () -> {
                 final OnBackInvokedCallback callback = mCallback.get();
                 if (callback == null) {
                     return;
                 }
                 callback.onBackInvoked();
-            });
+            };
+
+            if (mBackFocusKeeper == null) {
+                Handler.getMain().post(r);
+            } else {
+                ViewRootImpl.BackFocusKeeper backFocusKeeper = mBackFocusKeeper.get();
+                if (backFocusKeeper == null || backFocusKeeper.hasWindowFocus()) {
+                    Handler.getMain().post(r);
+                } else {
+                    Log.w(TAG, "Not focused windsow. will wait for"
+                            + backFocusKeeper.getBackFocusTimeOut() + "ms");
+                    backFocusKeeper.setOnBackInvokedCallback(r);
+                    if (!Handler.getMain().hasCallbacks(backFocusKeeper.getBackFocusTimeOutCallbck())) {
+                        Handler.getMain().postDelayed(backFocusKeeper.getBackFocusTimeOutCallbck(),
+                                backFocusKeeper.getBackFocusTimeOut());
+                    }
+                }
+            }
         }
 
         @Nullable
