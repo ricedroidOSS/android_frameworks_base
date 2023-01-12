@@ -326,11 +326,13 @@ public class KeyguardIndicationController {
 
         mCurrentDivider = mContext.getResources().getInteger(R.integer.config_currentInfoDivider);
 
-        mBatteryPropertiesRegistrar =
-                    IBatteryPropertiesRegistrar.Stub.asInterface(
-                    ServiceManager.getService("batteryproperties"));
         mAlternateFastchargeInfoUpdate =
                     mContext.getResources().getBoolean(R.bool.config_alternateFastchargeInfoUpdate);
+        if (mAlternateFastchargeInfoUpdate) {
+            mBatteryPropertiesRegistrar =
+                    IBatteryPropertiesRegistrar.Stub.asInterface(
+                    ServiceManager.getService("batteryproperties"));
+        }
     }
 
     public void setIndicationArea(ViewGroup indicationArea) {
@@ -1174,7 +1176,7 @@ public class KeyguardIndicationController {
                 Log.e(TAG, "Error calling IBatteryStats: ", e);
                 mChargingTimeRemaining = -1;
             }
-            if ((wasPluggedIn != mPowerPluggedIn) && mAlternateFastchargeInfoUpdate) {
+            if (mAlternateFastchargeInfoUpdate && (wasPluggedIn != mPowerPluggedIn)) {
                 if (mPowerPluggedIn) {
                     mUpdateInfo.run();
                 } else {
