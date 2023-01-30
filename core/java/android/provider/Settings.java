@@ -6361,6 +6361,11 @@ public final class Settings {
         public static final String QS_PANEL_STYLE = "qs_panel_style";
 
         /**
+         * @hide
+         */
+        public static final String SETTINGS_DASHBOARD_STYLE = "settings_dashboard_style";
+
+        /**
          * Whether to enable artwork blur
          * @hide
          */
