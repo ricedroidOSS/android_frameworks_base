@@ -25,6 +25,7 @@
     android:gravity="center"
     android:layout_gravity="top"
     android:orientation="horizontal"
+    android:minHeight="@dimen/qs_panel_padding_top"
     android:clickable="true">
 
     <FrameLayout
@@ -32,56 +33,9 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
+    	android:minHeight="@dimen/qs_panel_padding_top"
         android:gravity="center_vertical|start" >
-        
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_gravity="center_vertical|start"
-            android:gravity="center_vertical|start">
 
-        <com.android.systemui.statusbar.policy.Clock
-            android:id="@+id/custom_clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="start|center_vertical"
-            android:gravity="start|center_vertical"
-            android:singleLine="true"
-            android:layout_marginStart="2dp"
-            android:textAppearance="@style/TextAppearance.QS.Status"
-            systemui:longDatePattern="@string/abbrev_wday_month_day_no_year_alarm"
-            systemui:shortDatePattern="@string/abbrev_month_day_no_year"
-            systemui:showDark="false"
-        />
-
-        <LinearLayout
-            android:id="@+id/weather_view_header"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:layout_marginStart="2dp"
-            android:layout_gravity="center_vertical|start"
-            android:gravity="center_vertical|start">
-            
-            <com.android.systemui.corvus.qsweather.QsWeatherImage
-                android:id="@+id/weather_image"
-                android:layout_width="24dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical|start" />
-
-            <com.android.systemui.corvus.qsweather.QsWeatherText
-                android:id="@+id/weather_temp"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical|start"
-                android:paddingStart="2dp"
-                android:maxLines="1"
-                android:textAppearance="@style/TextAppearance.QS.Status" />
-    	      </LinearLayout>
-        </LinearLayout>
     </FrameLayout>
 
     <!-- We want this to be centered (to align with notches). In order to do that, the following
@@ -102,7 +56,7 @@
         android:layout_weight="1"
         android:layout_gravity="center_vertical|end"
         android:gravity="center_vertical|end" >
-        
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -111,27 +65,51 @@
             android:layout_gravity="center_vertical|end"
             android:gravity="center_vertical|end">
 
-            <include layout="@layout/qs_carrier_group"
-             android:id="@+id/carrier_group"
+        <LinearLayout
+             android:id="@+id/weather_view_header"
              android:layout_width="wrap_content"
              android:layout_height="match_parent"
-             android:maxWidth="80dp"
+             android:maxWidth="100dp"
              android:layout_gravity="end|center_vertical"
-             android:layout_weight="2"
-             android:focusable="false"/>
+             android:layout_weight="2">
+
+            <com.android.systemui.corvus.qsweather.QsWeatherImage
+                android:id="@+id/weather_image"
+                android:layout_width="24dp"
+                android:paddingStart="2dp"
+                android:paddingEnd="2dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical|start" />
+
+            <com.android.systemui.corvus.qsweather.QsWeatherText
+                android:id="@+id/weather_temp"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical|start"
+                android:paddingStart="2dp"
+                android:ellipsize="marquee"
+                android:singleLine="true"
+                android:focusable="true" 
+                android:textDirection="locale"
+                android:scrollHorizontally="true"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:textAppearance="@style/TextAppearance.QS.Status" />
+    	 </LinearLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:layout_marginStart="2dp"
+            android:paddingStart="2dp"
             android:layout_gravity="center_vertical|end"
             android:gravity="center_vertical|end">
-            
-                 <include layout="@layout/ongoing_privacy_chip"
-                   android:minWidth="48dp" />
+
+                 <include layout="@layout/ongoing_privacy_chip" />
+
     	      </LinearLayout>
+
         </LinearLayout>
+
     </FrameLayout>
 
     <com.android.systemui.battery.BatteryMeterView
