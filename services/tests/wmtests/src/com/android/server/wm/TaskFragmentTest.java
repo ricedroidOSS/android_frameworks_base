@@ -23,7 +23,9 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSET;
+import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 import static android.os.Process.FIRST_APPLICATION_UID;
+import static android.view.WindowManager.LayoutParams.TYPE_BASE_APPLICATION;
 
 import static com.android.dx.mockito.inline.extended.ExtendedMockito.any;
 import static com.android.dx.mockito.inline.extended.ExtendedMockito.doNothing;
@@ -543,5 +545,62 @@ public class TaskFragmentTest extends WindowTestsBase {
         // Making the activity0 be the focused activity and ensure the focused app is updated.
         activity0.moveFocusableActivityToTop("test");
         assertEquals(activity0, mDisplayContent.mFocusedApp);
+    }
+
+    @Test
+    public void testIsVisibleWithAdjacent_reportOrientationUnspecified() {
+        final Task task = createTask(mDisplayContent);
+        final TaskFragment tf0 = createTaskFragmentWithParentTask(task);
+        final TaskFragment tf1 = createTaskFragmentWithParentTask(task);
+        tf0.setAdjacentTaskFragment(tf1);
+        tf0.setWindowingMode(WINDOWING_MODE_MULTI_WINDOW);
+        tf1.setWindowingMode(WINDOWING_MODE_MULTI_WINDOW);
+        task.setBounds(0, 0, 1200, 1000);
+        tf0.setBounds(0, 0, 600, 1000);
+        tf1.setBounds(600, 0, 1200, 1000);
+        final ActivityRecord activity0 = tf0.getTopMostActivity();
+        final ActivityRecord activity1 = tf1.getTopMostActivity();
+        doReturn(true).when(activity0).isVisibleRequested();
+        doReturn(true).when(activity1).isVisibleRequested();
+
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, tf0.getOrientation(SCREEN_ORIENTATION_UNSET));
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, tf1.getOrientation(SCREEN_ORIENTATION_UNSET));
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, task.getOrientation(SCREEN_ORIENTATION_UNSET));
+
+        activity0.setRequestedOrientation(SCREEN_ORIENTATION_LANDSCAPE);
+
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, tf0.getOrientation(SCREEN_ORIENTATION_UNSET));
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, tf1.getOrientation(SCREEN_ORIENTATION_UNSET));
+        assertEquals(SCREEN_ORIENTATION_UNSPECIFIED, task.getOrientation(SCREEN_ORIENTATION_UNSET));
+    }
+
+    @Test
+    public void testUpdateImeParentForActivityEmbedding() {
+        // Setup two activities in ActivityEmbedding.
+        final Task task = createTask(mDisplayContent);
+        final TaskFragment tf0 = new TaskFragmentBuilder(mAtm)
+                .setParentTask(task)
+                .createActivityCount(1)
+                .setOrganizer(mOrganizer)
+                .setFragmentToken(new Binder())
+                .build();
+        final TaskFragment tf1 = new TaskFragmentBuilder(mAtm)
+                .setParentTask(task)
+                .createActivityCount(1)
+                .setOrganizer(mOrganizer)
+                .setFragmentToken(new Binder())
+                .build();
+        final ActivityRecord activity0 = tf0.getTopMostActivity();
+        final ActivityRecord activity1 = tf1.getTopMostActivity();
+        final WindowState win0 = createWindow(null, TYPE_BASE_APPLICATION, activity0, "win0");
+        final WindowState win1 = createWindow(null, TYPE_BASE_APPLICATION, activity1, "win1");
+        doReturn(false).when(mDisplayContent).shouldImeAttachedToApp();
+
+        mDisplayContent.setImeInputTarget(win0);
+        mDisplayContent.setImeLayeringTarget(win1);
+
+        // The ImeParent should be the display.
+        assertEquals(mDisplayContent.getImeContainer().getParent().getSurfaceControl(),
+                mDisplayContent.computeImeParent());
     }
 }
