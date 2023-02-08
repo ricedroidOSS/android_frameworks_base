@@ -23,6 +23,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.UserHandle;
 import android.util.ArraySet;
+import android.util.Slog;
 import android.util.proto.ProtoOutputStream;
 
 import com.android.server.am.UriPermissionOwnerProto;
@@ -33,6 +34,7 @@ import java.io.PrintWriter;
 import java.util.Iterator;
 
 public class UriPermissionOwner {
+    private static final String TAG = "UriPermissionOwner";
     private final UriGrantsManagerInternal mService;
     private final Object mOwner;
 
@@ -138,6 +140,10 @@ public class UriPermissionOwner {
     }
 
     public void removeReadPermission(UriPermission perm) {
+        if (mReadPerms == null) {
+            Slog.w(TAG, "mReadPerms is null");
+            return;
+        }
         mReadPerms.remove(perm);
         if (mReadPerms.isEmpty()) {
             mReadPerms = null;
@@ -145,6 +151,10 @@ public class UriPermissionOwner {
     }
 
     public void removeWritePermission(UriPermission perm) {
+        if (mWritePerms == null) {
+            Slog.w(TAG, "mWritePerms is null");
+            return;
+        }
         mWritePerms.remove(perm);
         if (mWritePerms.isEmpty()) {
             mWritePerms = null;
