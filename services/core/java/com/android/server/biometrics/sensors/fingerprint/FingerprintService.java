@@ -312,12 +312,14 @@ public class FingerprintService extends SystemService {
             // Clear calling identity when checking LockPatternUtils for StrongAuth flags.
             final long identity1 = Binder.clearCallingIdentity();
             try {
-                if (isKeyguard && Utils.isUserEncryptedOrLockdown(mLockPatternUtils, userId)) {
-                    // If this happens, something in KeyguardUpdateMonitor is wrong.
-                    // SafetyNet for b/79776455
-                    EventLog.writeEvent(0x534e4554, "79776455");
-                    Slog.e(TAG, "Authenticate invoked when user is encrypted or lockdown");
-                    return -1;
+                synchronized (mLockPatternUtils) {
+                    if (isKeyguard && Utils.isUserEncryptedOrLockdown(mLockPatternUtils, userId)) {
+                        // If this happens, something in KeyguardUpdateMonitor is wrong.
+                        // SafetyNet for b/79776455
+                        EventLog.writeEvent(0x534e4554, "79776455");
+                        Slog.e(TAG, "Authenticate invoked when user is encrypted or lockdown");
+                        return -1;
+                    }
                 }
             } finally {
                 Binder.restoreCallingIdentity(identity1);
@@ -452,11 +454,13 @@ public class FingerprintService extends SystemService {
                 return -1;
             }
 
-            if (!Utils.isUserEncryptedOrLockdown(mLockPatternUtils, userId)) {
-                // If this happens, something in KeyguardUpdateMonitor is wrong. This should only
-                // ever be invoked when the user is encrypted or lockdown.
-                Slog.e(TAG, "detectFingerprint invoked when user is not encrypted or lockdown");
-                return -1;
+            synchronized (mLockPatternUtils) {
+                if (!Utils.isUserEncryptedOrLockdown(mLockPatternUtils, userId)) {
+                    // If this happens, something in KeyguardUpdateMonitor is wrong. This should only
+                    // ever be invoked when the user is encrypted or lockdown.
+                    Slog.e(TAG, "detectFingerprint invoked when user is not encrypted or lockdown");
+                    return -1;
+                }
             }
 
             final Pair<Integer, ServiceProvider> provider = getSingleProvider();
