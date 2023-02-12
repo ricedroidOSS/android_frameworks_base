@@ -35,13 +35,17 @@ public class PixelPropsUtils {
     private static final String DEVICE = "ro.product.device";
     private static final boolean DEBUG = false;
     
+    private static final String ANDROIDX_TEST = "androidx.test";
     private static final String PACKAGE_ASI = "com.google.android.settings.intelligence";
     private static final String PACKAGE_FINSKY = "com.android.vending";
+    private static final String PACKAGE_GMS_RESTORE = "com.google.android.apps.restore";
     private static final String PACKAGE_GMS = "com.google.android.gms";
     private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
     private static final String PACKAGE_NETFLIX = "com.netflix.mediaclient";
-    private static final String PROCESS_GMS_UNSTABLE = ".unstable";
-    private static final String PROCESS_GMS_PERSISTENT = ".persistent";
+    private static final String PROCESS_GMS_UNSTABLE = "unstable";
+    private static final String PROCESS_GMS_PERSISTENT = "persistent";
+    private static final String PROCESS_GMS_PIXEL_MIGRATE = "pixelmigrate";
+    private static final String PROCESS_INSTRUMENTATION = "instrumentation";
 
     private static final Map<String, Object> propsToChange;
     private static final Map<String, Object> propsToChangePixel5;
@@ -240,13 +244,19 @@ public class PixelPropsUtils {
             return;
         }
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
-        if (packageName.equals(PACKAGE_GMS)) {
+        boolean isPackageGms = packageName.toLowerCase().contains(ANDROIDX_TEST) 
+        	    || packageName.equals(PACKAGE_GMS_RESTORE) 
+        	    || packageName.equals(PACKAGE_GMS);
+        if (isPackageGms) {
              final String processName = Application.getProcessName();
-             sIsGms = processName.contains(PROCESS_GMS_UNSTABLE) || processName.contains(PROCESS_GMS_PERSISTENT);
+             sIsGms = processName.toLowerCase().contains(PROCESS_GMS_UNSTABLE) 
+             	      || processName.toLowerCase().contains(PROCESS_GMS_PERSISTENT) 
+             	      || processName.toLowerCase().contains(PROCESS_GMS_PIXEL_MIGRATE)
+             	      || processName.toLowerCase().contains(PROCESS_INSTRUMENTATION);
              if (!sIsGms) return;
              spoofBuildGms();
         }
-        if (packageName.startsWith("com.google.") && !packageName.equals(PACKAGE_GMS)
+        if (packageName.startsWith("com.google.") && !isPackageGms
                 || Arrays.asList(extraPackagesToChange).contains(packageName)) {
 
             boolean isPixelDevice = Arrays.asList(pixelCodenames).contains(SystemProperties.get(DEVICE));
@@ -392,10 +402,10 @@ public class PixelPropsUtils {
     }
 
     private static void spoofBuildGms() {
-        // Alter model name and fingerprint to avoid hardware attestation enforcement
-        setBuildField("BRAND_FOR_ATTESTATION", "google");
-        setBuildField("PRODUCT_FOR_ATTESTATION", "walleye");
-        setBuildField("MODEL_FOR_ATTESTATION", "Pixel 2");
+        // Alter build properties to avoid hardware attestation enforcement
+        setBuildField("BRAND", "google");
+        setBuildField("PRODUCT", "walleye");
+        setBuildField("MODEL", "Pixel 2");
     	setBuildField("MANUFACTURER", "Google");
         setBuildField("DEVICE", "walleye");
         setBuildField("FINGERPRINT", "google/walleye/walleye:8.1.0/OPM1.171019.011/4448085:user/release-keys");
