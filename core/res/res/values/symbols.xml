@@ -506,6 +506,8 @@
   <java-symbol type="dimen" name="config_ambiguousGestureMultiplier" />
   <java-symbol type="dimen" name="config_viewMinFlingVelocity" />
   <java-symbol type="dimen" name="config_viewMaxFlingVelocity" />
+  <java-symbol type="dimen" name="config_viewMinGestureFlingVelocity" />
+  <java-symbol type="dimen" name="config_viewMaxGestureFlingVelocity" />
   <java-symbol type="dimen" name="config_scrollbarSize" />
   <java-symbol type="dimen" name="config_horizontalScrollFactor" />
   <java-symbol type="dimen" name="config_verticalScrollFactor" />
