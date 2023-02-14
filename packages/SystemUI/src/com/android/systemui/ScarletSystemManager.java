@@ -81,7 +81,6 @@
  
          mStartManagerInstance = new Runnable() {
              public void run() {
-                     powerSaverHandler(true);
                      killBackgroundProcesses();
              }
          };
@@ -120,13 +119,6 @@
          }
      }
  
-     public static void powerSaverHandler(boolean enable) {
-         PowerManagerInternal mLocalPowerManager = LocalServices.getService(PowerManagerInternal.class);
-         if (mLocalPowerManager != null) {
-           mLocalPowerManager.setPowerMode(Mode.DEVICE_IDLE, enable);
-         }
-     }
- 
      public static void stopManager(Context mContext) {
          scarletHandler.removeCallbacks(mStartManagerInstance);
          onScreenWake(mContext);
@@ -134,11 +126,6 @@
  
      public static void onScreenWake(Context mContext) {
          scarletHandler.removeCallbacks(mStopManagerInstance);
-         powerSaverHandler(false);
-         PowerManagerInternal mLocalPowerManager = LocalServices.getService(PowerManagerInternal.class);
-         if (mLocalPowerManager != null) {
-           mLocalPowerManager.setPowerBoost(Boost.INTERACTION, SYS_POWER_INTERACTION_MAX_DURATION);
-         }
      }
  
      public static long timeBeforeAlarm(Context imContext) {
