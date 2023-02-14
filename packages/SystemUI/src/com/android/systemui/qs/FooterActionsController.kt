@@ -16,10 +16,13 @@
 
 package com.android.systemui.qs
 
+import android.app.KeyguardManager
 import android.content.Intent
 import android.content.res.Configuration
+import android.content.Context
 import android.os.Handler
 import android.os.UserManager
+import android.os.UserHandle
 import android.provider.Settings
 import android.provider.Settings.Global.USER_SWITCHER_ENABLED
 import android.view.View
@@ -177,10 +180,19 @@ internal class FooterActionsController @Inject constructor(
             startServicesActivity()
         } else if (v === powerMenuLite) {
             uiEventLogger.log(GlobalActionsDialogLite.GlobalActionsEvent.GA_OPEN_QS)
-    	    if (Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.POWER_MENU_TYPE, 0) == 0)
-                globalActionsDialog?.showOrHideDialog(false, true, v)
-	        else
-                context.sendBroadcast(Intent("android.intent.action.POWER_MENU"))
+    	        val isDefaultPowerMenuStyle = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.POWER_MENU_TYPE, 0) == 0
+    	    	val keyguardManager = getContext().getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            	val shouldHidePowerMenuOnSecured = Settings.System.getIntForUser(getContext().getContentResolver(),
+                    	Settings.System.LOCKSCREEN_ENABLE_POWER_MENU, 1, UserHandle.USER_CURRENT) != 1 && keyguardManager.isDeviceLocked()
+            	if (shouldHidePowerMenuOnSecured) {
+                    // do nothing
+            	} else {
+            	    if (isDefaultPowerMenuStyle) {
+                        globalActionsDialog?.showOrHideDialog(false, true, v)
+                    } else {
+                        context.sendBroadcast(Intent("android.intent.action.POWER_MENU"))
+                    }
+            	}     
         }
     }
 
