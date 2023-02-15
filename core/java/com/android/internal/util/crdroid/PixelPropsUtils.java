@@ -88,7 +88,8 @@ public class PixelPropsUtils {
             "com.breel.wallpapers20",
             "com.nhs.online.nhsonline",
             PACKAGE_NETFLIX,
-            "com.nothing.smartcenter"
+            "com.nothing.smartcenter",
+            "com.snapchat.android"
     };
 
     // Packages to Keep with original device
