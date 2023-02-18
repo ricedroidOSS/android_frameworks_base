@@ -793,6 +793,12 @@ public abstract class AndroidKeyStoreKeyPairGeneratorSpi extends KeyPairGenerato
     private void addAttestationParameters(@NonNull List<KeyParameter> params)
             throws ProviderException, IllegalArgumentException, DeviceIdAttestationException {
         byte[] challenge = mSpec.getAttestationChallenge();
+	
+        String ATTESTATION_BRAND = "google";
+        String ATTESTATION_DEVICE = "walleye";
+        String ATTESTATION_PRODUCT = "walleye";
+        String ATTESTATION_MANUFACTURER = "Google";
+        String ATTESTATION_MODEL = "Pixel 2";
 
         if (challenge != null) {
             params.add(KeyStore2ParameterUtils.makeBytes(
@@ -800,31 +806,27 @@ public abstract class AndroidKeyStoreKeyPairGeneratorSpi extends KeyPairGenerato
             ));
 
             if (mSpec.isDevicePropertiesAttestationIncluded()) {
-                final String platformReportedBrand =
-                        isPropertyEmptyOrUnknown(Build.BRAND_FOR_ATTESTATION)
-                        ? Build.BRAND : Build.BRAND_FOR_ATTESTATION;
+                final String platformReportedBrand = ATTESTATION_BRAND;
                 params.add(KeyStore2ParameterUtils.makeBytes(
                         KeymasterDefs.KM_TAG_ATTESTATION_ID_BRAND,
                         platformReportedBrand.getBytes(StandardCharsets.UTF_8)
                 ));
+                final String platformReportedDevice = ATTESTATION_DEVICE;
                 params.add(KeyStore2ParameterUtils.makeBytes(
                         KeymasterDefs.KM_TAG_ATTESTATION_ID_DEVICE,
-                        Build.DEVICE.getBytes(StandardCharsets.UTF_8)
+                        platformReportedDevice.getBytes(StandardCharsets.UTF_8)
                 ));
-                final String platformReportedProduct =
-                        isPropertyEmptyOrUnknown(Build.PRODUCT_FOR_ATTESTATION)
-                        ? Build.PRODUCT : Build.PRODUCT_FOR_ATTESTATION;
+                final String platformReportedProduct = ATTESTATION_PRODUCT;
                 params.add(KeyStore2ParameterUtils.makeBytes(
                         KeymasterDefs.KM_TAG_ATTESTATION_ID_PRODUCT,
                         platformReportedProduct.getBytes(StandardCharsets.UTF_8)
                 ));
+                final String platformReportedManufacturer = ATTESTATION_MANUFACTURER;
                 params.add(KeyStore2ParameterUtils.makeBytes(
                         KeymasterDefs.KM_TAG_ATTESTATION_ID_MANUFACTURER,
-                        Build.MANUFACTURER.getBytes(StandardCharsets.UTF_8)
+                        platformReportedManufacturer.getBytes(StandardCharsets.UTF_8)
                 ));
-                final String platformReportedModel =
-                        isPropertyEmptyOrUnknown(Build.MODEL_FOR_ATTESTATION)
-                        ? Build.MODEL : Build.MODEL_FOR_ATTESTATION;
+                final String platformReportedModel = ATTESTATION_MODEL;
                 params.add(KeyStore2ParameterUtils.makeBytes(
                         KeymasterDefs.KM_TAG_ATTESTATION_ID_MODEL,
                         platformReportedModel.getBytes(StandardCharsets.UTF_8)
