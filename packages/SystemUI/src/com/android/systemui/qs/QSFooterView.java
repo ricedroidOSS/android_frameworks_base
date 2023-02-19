@@ -99,25 +99,20 @@ public class QSFooterView extends FrameLayout {
     }
 
     private void setUsageText() {
-        if (mUsageText == null) return;
-        DataUsageController.DataUsageInfo info;
-        String suffix;
-        if (isWifiConnected()) {
-             info = mDataController.getWifiDailyDataUsageInfo();
-            suffix = mContext.getResources().getString(R.string.usage_wifi_default_suffix);
-        } else {
-            mDataController.setSubscriptionId(
-                    SubscriptionManager.getDefaultDataSubscriptionId());
-            info = mDataController.getDailyDataUsageInfo();
-            suffix = mContext.getResources().getString(R.string.usage_data_default_suffix);
-        }
-        if (info != null) {
-          mUsageText.setText(formatDataUsage(info.usageLevel) + " " +
-                  mContext.getResources().getString(R.string.usage_data) +
-                  " (" + suffix + ")");
-        } else {
-           mUsageText.setText(" ");
-	}
+        if (mUsageText == null && mDataController == null) return;
+        String dataNotAvailable = mContext.getResources().getString(R.string.usage_data_unavailable);
+            if (!isWifiConnected()) {
+                mDataController.setSubscriptionId(SubscriptionManager.getDefaultDataSubscriptionId());
+            }
+            DataUsageController.DataUsageInfo info = isWifiConnected() ? mDataController.getWifiDailyDataUsageInfo() : mDataController.getDailyDataUsageInfo();
+            String suffix = mContext.getResources().getString(isWifiConnected() ? R.string.usage_wifi_default_suffix : R.string.usage_data_default_suffix);
+            if (info != null) {
+                String dataUsage = formatDataUsage(info.usageLevel) + " " + mContext.getResources().getString(R.string.usage_data) + " (" + suffix + ")";
+                String usageText = formatDataUsage(info.usageLevel).toString().startsWith("0") ? dataNotAvailable : dataUsage;
+                mUsageText.setText(usageText);
+                return;
+            }
+            mUsageText.setText(dataNotAvailable);
     }
 
     private CharSequence formatDataUsage(long byteValue) {
