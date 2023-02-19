@@ -19,7 +19,6 @@ package com.android.systemui.corvus.qsweather;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.database.ContentObserver;
 import android.graphics.Rect;
 import android.os.Handler;

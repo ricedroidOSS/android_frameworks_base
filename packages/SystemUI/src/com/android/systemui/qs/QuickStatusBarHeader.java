@@ -464,6 +464,8 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
     }
 
     private void updateAlphaAnimator() {
+        int endPadding = mContext.getResources()
+                .getDimensionPixelSize(R.dimen.status_bar_left_clock_end_padding);
         if (mUseCombinedQSHeader) {
             mAlphaAnimator = null;
             return;
@@ -478,7 +480,7 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
                 .addFloat(mClockDateView, "alpha", 1, 0, 0, 0, 0)
                 // Move the clock container
                 .addFloat(mClockContainer, "translationX",
-                    mHeaderPaddingLeft + mStatusBarPaddingEnd, mExpandedQsClockDateStart)
+                    mHeaderPaddingLeft + mStatusBarPaddingEnd, mExpandedQsClockDateStart - endPadding)
                 .addFloat(mDateView, "translationX",
                     mHeaderPaddingLeft + mStatusBarPaddingEnd, mExpandedQsClockDateStart)
                 // Enlarge clock on expanding down
@@ -509,6 +511,8 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
                         }
                         mDateView.setVisibility(View.VISIBLE);
                         mQSCarriers.setVisibility(View.VISIBLE);
+                        setChipVisibility(mPrivacyChip.getVisibility() == View.VISIBLE);
+                        mQsWeatherView.setVisibility(View.GONE);
                         setSeparatorVisibility(false);
                     }
 
@@ -524,6 +528,12 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
                         setSeparatorVisibility(mShowClockIconsSeparator);
                         updateRightLayout(false);
                         mClockHeight = mClockView.getMeasuredHeight();
+                        if (mQsWeatherHeaderView != null) {
+                            mQsWeatherHeaderView.setVisibility(View.GONE);
+                        }
+                        if (mQsWeatherView != null) {
+                            mQsWeatherView.setVisibility(mQQSWeather != 1 ? View.VISIBLE : View.GONE);
+                        }
                     }
                 });
         mAlphaAnimator = builder.build();
@@ -557,7 +567,15 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
             mIconsAlphaAnimator = mIconsAlphaAnimatorFixed;
             mIconsAlphaAnimator.setPosition(mKeyguardExpansionFraction);
             setBatteryRemainingOnClick(false);
+            if (mQQSWeather > 0 && mQsWeatherHeaderView != null) {
+                mQSWeatherTemp.setSelected(false);
+                mQsWeatherHeaderView.setVisibility(View.GONE);
+            }
         } else {
+            if (mQQSWeather > 0 && mQsWeatherHeaderView != null) {
+                mQsWeatherHeaderView.setVisibility(View.VISIBLE);
+                mQSWeatherTemp.setSelected(true);
+            }
             mIconsAlphaAnimator = null;
             mIconContainer.setAlpha(1);
             mBatteryRemainingIcon.setAlpha(1);
@@ -797,16 +815,7 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
     }
 
     private void updateQSWeatherPosition() {
-        if (mQQSWeather == 0) {
-            mQsWeatherHeaderView.setVisibility(View.GONE);
-            mQsWeatherView.setVisibility(View.VISIBLE);
-        } else if (mQQSWeather == 1) {
-            mQsWeatherHeaderView.setVisibility(View.VISIBLE);
-            mQsWeatherView.setVisibility(View.GONE);
-        } else {
-            mQsWeatherHeaderView.setVisibility(View.VISIBLE);
-            mQsWeatherView.setVisibility(View.VISIBLE);
-        }
+        mQsWeatherView.setVisibility(mQQSWeather != 1 ? View.VISIBLE : View.GONE);
     }
 
     @Override
