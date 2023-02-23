@@ -127,6 +127,8 @@ class AuthRippleController @Inject constructor(
             keyguardUpdateMonitor.userNeedsStrongAuth()) {
             return
         }
+        
+        if (!isRippleEnabled) return
 
         updateSensorLocation()
         if (biometricSourceType == BiometricSourceType.FINGERPRINT) {
@@ -164,7 +166,6 @@ class AuthRippleController @Inject constructor(
     }
 
     private fun showUnlockedRipple() {
-        if (!isRippleEnabled) return
 
         notificationShadeWindowController.setForcePluginOpen(true, this)
         val lightRevealScrim = centralSurfaces.lightRevealScrim
@@ -186,10 +187,7 @@ class AuthRippleController @Inject constructor(
 
     override fun onKeyguardFadingAwayChanged() {
         if (!isRippleEnabled) {
-            // reset and hide the scrim so it doesn't appears on
-            // the next notification shade usage
-            centralSurfaces.lightRevealScrim?.revealAmount = 1f
-            startLightRevealScrimOnKeyguardFadingAway = false
+            // let centralsurfacesimpl reset the lightscrim animation
             return
         }
 
@@ -232,7 +230,8 @@ class AuthRippleController @Inject constructor(
      * Whether we're animating the light reveal scrim from a call to [onKeyguardFadingAwayChanged].
      */
     fun isAnimatingLightRevealScrim(): Boolean {
-        return lightRevealScrimAnimator?.isRunning ?: false
+        val isLightRevealScrimRunning = lightRevealScrimAnimator?.isRunning ?: false
+        return if (!isRippleEnabled) false else isLightRevealScrimRunning
     }
 
     override fun onStartedGoingToSleep() {
