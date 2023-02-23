@@ -1878,7 +1878,7 @@ public final class Settings implements Watchable, Snappable {
             Slog.wtf(PackageManagerService.TAG, "Error reading package manager stopped packages",
                     e);
 
-        } catch (java.io.IOException e) {
+        } catch (java.io.IOException | ArrayIndexOutOfBoundsException | NumberFormatException e) {
             mReadMessages.append("Error reading: " + e.toString());
             PackageManagerService.reportSettingsProblem(Log.ERROR, "Error reading settings: " + e);
             Slog.wtf(PackageManagerService.TAG, "Error reading package manager stopped packages",
