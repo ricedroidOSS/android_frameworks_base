@@ -3048,6 +3048,8 @@ public class Vpn {
             }
 
             mActiveNetwork = network;
+            mUnderlyingLinkProperties = null;
+            mUnderlyingNetworkCapabilities = null;
             mRetryCount = 0;
 
             startOrMigrateIkeSession(network);
