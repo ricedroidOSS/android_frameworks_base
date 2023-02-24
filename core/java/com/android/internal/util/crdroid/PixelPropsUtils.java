@@ -47,7 +47,6 @@ public class PixelPropsUtils {
     private static final String PROCESS_GMS_PIXEL_MIGRATE = "pixelmigrate";
     private static final String PROCESS_INSTRUMENTATION = "instrumentation";
 
-    private static final Map<String, Object> propsToChange;
     private static final Map<String, Object> propsToChangePixel5;
     private static final Map<String, Object> propsToChangePixel7Pro;
     private static final Map<String, Object> propsToChangePixelXL;
@@ -191,7 +190,6 @@ public class PixelPropsUtils {
 
     static {
         propsToKeep = new HashMap<>();
-        propsToChange = new HashMap<>();
         propsToKeep.put(PACKAGE_ASI, new ArrayList<>(Collections.singletonList("FINGERPRINT")));
         propsToChangePixel7Pro = new HashMap<>();
         propsToChangePixel7Pro.put("BRAND", "google");
@@ -244,6 +242,7 @@ public class PixelPropsUtils {
         if (Arrays.asList(packagesToKeep).contains(packageName)) {
             return;
         }
+        Map<String, Object> propsToChange = new HashMap<>();
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
         boolean isPackageGms = packageName.toLowerCase().contains(ANDROIDX_TEST) 
         	    || packageName.equals(PACKAGE_GMS_RESTORE) 
