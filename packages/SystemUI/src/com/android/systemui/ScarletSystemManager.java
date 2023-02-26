@@ -58,10 +58,10 @@
      static ContentResolver mContentResolver;
      static List<String> killablePackages;
      static final long INIT_TIME_NEEDED = 20000;
-     static final String SYS_SYSTEM_BGT = "persist.sys.bgt.enable";
-     static final String SYS_RENDER_BOOST_THREAD = "persist.sys.perf.topAppRenderThreadBoost.enable";
+     static final String SYS_SYSTEM_BGT = "persist.sys.fw.bgt.enable";
+     static final String SYS_RENDER_BOOST_THREAD = "persist.sys.fw.topAppRenderThreadBoost.enable";
      static final String SYS_COMPACTION = "persist.sys.appcompact.enable_app_compact";
-     static final String SYS_SYSTEM_BOOST = "persist.sys.perf.systemboost.enable";
+     static final String SYS_SYSTEM_BOOST = "persist.sys.fw.systemboost.enable";
      static final String SYS_INTERACTION_MAX = "persist.sys.powerhal.interaction.max";
      static final String SYS_INTERACTION_MAX_DEFAULT = "persist.sys.powerhal.interaction.max_default";
      static final String SYS_INTERACTION_MAX_BOOST = "persist.sys.powerhal.interaction.max_boost";
@@ -110,6 +110,8 @@
         SystemProperties.set(SYS_COMPACTION, enable ? "false" : "true");
         SystemProperties.set(SYS_SYSTEM_BOOST, enable ? "true" : "false");
         SystemProperties.set(SYS_INTERACTION_MAX, enable ? String.valueOf(SYS_POWER_SYSBOOST_TIMEOUT_MS) : String.valueOf((SYS_POWER_BOOST_TIMEOUT_MS_DEFAULT)));
+        SystemProperties.set("persist.sys.fw.ime_boost", enable ? "true" : "false");
+        SystemProperties.set("persist.sys.fw.dplh", enable ? "true" : "false");
      }
  
      public static void cacheCleaner(PackageManager pm) {

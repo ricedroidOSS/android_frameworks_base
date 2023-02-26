@@ -523,8 +523,8 @@ public class DisplayPolicy {
         }
 
         if (mPerf != null) {
-            SCROLL_BOOST_SS_ENABLE = Boolean.parseBoolean(mPerf.perfGetProp("vendor.perf.gestureflingboost.enable", "true"));
-            DRAG_PLH_ENABLE = Boolean.parseBoolean(mPerf.perfGetProp("ro.vendor.perf.dplh", "false"));
+            SCROLL_BOOST_SS_ENABLE = Boolean.parseBoolean(mPerf.perfGetProp("persist.sys.fw.gfBoost.enable", "true"));
+            DRAG_PLH_ENABLE = Boolean.parseBoolean(mPerf.perfGetProp("persist.sys.fw.dplh", "false"));
         }
         isLowRAM = SystemProperties.getBoolean("ro.config.low_ram", false);
 

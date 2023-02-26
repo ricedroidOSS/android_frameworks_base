@@ -576,7 +576,7 @@ public final class ActiveServices {
 
         final IBinder b = ServiceManager.getService(Context.PLATFORM_COMPAT_SERVICE);
         
-	SERVICE_RESCHEDULE = Boolean.parseBoolean(SystemProperties.get("persist.sys.am.reschedule_service", "false"));
+	SERVICE_RESCHEDULE = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.reschedule_service", "false"));
     }
 
     void systemServicesReady() {

@@ -668,7 +668,7 @@ public final class InputMethodManager {
                 mPerfBoost = new BoostFramework();
 
                 if (mPerfBoost != null) {
-                    IME_BOOST_ENABLED = Boolean.parseBoolean(mPerfBoost.perfGetProp("ro.vendor.qti.sys.fw.use_ime_boost", "false"));
+                    IME_BOOST_ENABLED = Boolean.parseBoolean(mPerfBoost.perfGetProp("persist.sys.fw.ime_boost", "false"));
                 }
                 isImeBoostPropertyRead = true;
             }

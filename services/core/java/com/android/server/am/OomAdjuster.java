@@ -319,11 +319,11 @@ public class OomAdjuster {
         mMinBServiceAgingTime = Integer.valueOf(SystemProperties.get("persist.sys.fw.bservice_age", "5000"));
         mBServiceAppThreshold = Integer.valueOf(SystemProperties.get("persist.sys.fw.bservice_limit", "5"));
         mEnableBServicePropagation = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.bservice_enable", "false"));
-        mEnableProcessGroupCgroupFollow = Boolean.parseBoolean(SystemProperties.get("persist.sys.cgroup_follow.enable", "false"));
+        mEnableProcessGroupCgroupFollow = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.cg_follow.enable", "false"));
         mProcessGroupCgroupFollowDex2oatOnly = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.cgroup_follow.dex2oat_only", "false"));
-        mIsTopAppRenderThreadBoostEnabled = Boolean.parseBoolean(SystemProperties.get("persist.sys.perf.topAppRenderThreadBoost.enable", "false"));
-        mIsSystemBoostEnabled = Boolean.parseBoolean(SystemProperties.get("persist.sys.perf.systemboost.enable", "false"));
-        mEnableBgt = Boolean.parseBoolean(SystemProperties.get("persist.sys.bgt.enable", "false"));
+        mIsTopAppRenderThreadBoostEnabled = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.topAppRenderThreadBoost.enable", "false"));
+        mIsSystemBoostEnabled = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.systemboost.enable", "false"));
+        mEnableBgt = Boolean.parseBoolean(SystemProperties.get("persist.sys.fw.bgt.enable", "false"));
 
         mProcessGroupHandler = new Handler(adjusterThread.getLooper(), msg -> {
             final int pid = msg.arg1;
