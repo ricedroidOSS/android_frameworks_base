@@ -1743,6 +1743,9 @@ public final class ViewRootImpl implements ViewParent,
             if (!mAppVisible) {
                 WindowManagerGlobal.trimForeground();
             }
+            if (visible && mRemoved) {
+                return;
+            }
             AnimationHandler.requestAnimatorsEnabled(mAppVisible, this);
         }
     }
