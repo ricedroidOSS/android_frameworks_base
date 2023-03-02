@@ -227,7 +227,14 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
                     case BluetoothProfile.STATE_DISCONNECTED:
                         if (mHandler.hasMessages(profile.getProfileId())) {
                             mHandler.removeMessages(profile.getProfileId());
-                            setProfileConnectedStatus(profile.getProfileId(), true);
+                            if (profile.getConnectionPolicy(mDevice) > BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
+                                /* If we received state DISCONNECTED and previous state was CONNECTING
+                                * and connection policy is FORBIDDEN or UNKNOWN then it's not really
+                                * a failure to connect.
+                                */
+                                Log.w(TAG, "onProfileStateChanged(): Failed to connect profile");
+                                setProfileConnectedStatus(profile.getProfileId(), true);
+                            }
                         }
                         break;
                     default:
@@ -268,6 +275,8 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
 
     @VisibleForTesting
     void setProfileConnectedStatus(int profileId, boolean isFailed) {
+        Log.d(TAG, "Connect to profile : " + profileId + " isFailed=" + isFailed);
+
         switch (profileId) {
             case BluetoothProfile.A2DP:
                 mIsA2dpProfileConnectedFail = isFailed;
@@ -1204,6 +1213,12 @@ public class CachedBluetoothDevice implements Comparable<CachedBluetoothDevice> 
     }
 
     private boolean isProfileConnectedFail() {
+        Log.d(TAG, "mIsA2dpProfileConnectedFail = "+ mIsA2dpProfileConnectedFail);
+        Log.d(TAG, "mIsHearingAidProfileConnectedFail = "+ mIsHearingAidProfileConnectedFail);
+        Log.d(TAG, "mIsLeAudioProfileConnectedFail = "+ mIsLeAudioProfileConnectedFail);
+        Log.d(TAG, "mIsHeadsetProfileConnectedFail = "+ mIsHeadsetProfileConnectedFail);
+        Log.d(TAG, "isConnectedSapDevice() = "+ isConnectedSapDevice());
+
         return mIsA2dpProfileConnectedFail || mIsHearingAidProfileConnectedFail
                 || (!isConnectedSapDevice() && mIsHeadsetProfileConnectedFail)
                 || mIsLeAudioProfileConnectedFail;
