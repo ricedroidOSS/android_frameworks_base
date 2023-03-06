@@ -480,7 +480,7 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
                 .addFloat(mClockDateView, "alpha", 1, 0, 0, 0, 0)
                 // Move the clock container
                 .addFloat(mClockContainer, "translationX",
-                    mHeaderPaddingLeft + mStatusBarPaddingEnd, mExpandedQsClockDateStart - endPadding)
+                    mHeaderPaddingLeft + mStatusBarPaddingStart, mExpandedQsClockDateStart - endPadding)
                 .addFloat(mDateView, "translationX",
                     mHeaderPaddingLeft + mStatusBarPaddingEnd, mExpandedQsClockDateStart)
                 // Enlarge clock on expanding down
