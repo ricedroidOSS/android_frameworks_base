@@ -901,10 +901,14 @@ public class JobSchedulerService extends com.android.server.SystemService
                     Slog.w(TAG, "PACKAGE_CHANGED for " + pkgName + " / uid " + pkgUid);
                 }
             } else if (Intent.ACTION_PACKAGE_ADDED.equals(action)) {
+                final int uid = intent.getIntExtra(Intent.EXTRA_UID, -1);
                 if (!intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
-                    final int uid = intent.getIntExtra(Intent.EXTRA_UID, -1);
                     synchronized (mLock) {
                         mUidToPackageCache.remove(uid);
+                    }
+                } else {
+                    synchronized (mJobSchedulerStub.mPersistCache) {
+                        mJobSchedulerStub.mPersistCache.remove(uid);
                     }
                 }
             } else if (Intent.ACTION_PACKAGE_FULLY_REMOVED.equals(action)) {
