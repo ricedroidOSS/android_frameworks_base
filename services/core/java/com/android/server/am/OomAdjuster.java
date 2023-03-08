@@ -102,6 +102,8 @@ import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
+import android.os.UserHandle;
+import android.provider.Settings;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.BoostFramework;
@@ -122,6 +124,7 @@ import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * All of the code required to compute proc states and oom_adj values.
@@ -2720,6 +2723,36 @@ public class OomAdjuster {
                 }
             }
         }
+        
+        boolean isLockTasked = false;
+        final ProcessServiceRecord psr = app.mServices;
+        for (int s = psr.numberOfRunningServices() - 1;
+                s >= 0 && (state.getCurAdj() > ProcessList.FOREGROUND_APP_ADJ
+                        || state.getSetSchedGroup() == ProcessList.SCHED_GROUP_BACKGROUND
+                        || state.getCurProcState() > ActivityManager.PROCESS_STATE_TOP);
+                s--) {
+        	ServiceRecord sr = psr.getRunningServiceAt(s);
+        	List<String> mLockedTasks = new ArrayList<>();
+
+        	String lockedTasks = Settings.System.getStringForUser(
+                    	mService.mContext.getContentResolver(),
+                    	Settings.System.RECENTS_LOCKED_TASKS,
+                    	UserHandle.USER_CURRENT);
+                    
+        	if (mLockedTasks.size() == 0 && lockedTasks != null && !lockedTasks.isEmpty()) {
+            	    mLockedTasks = new ArrayList<String>(Arrays.asList(lockedTasks.split(",")));
+        	}
+        
+        	if (sr.packageName != null && mLockedTasks.contains(sr.packageName)) {
+            	    isLockTasked = true;
+        	}
+        }
+
+        if (isLockTasked) {
+            ProcessList.setOomAdj(app.getPid(), app.uid, ProcessList.SYSTEM_ADJ);
+            state.setSetAdj(ProcessList.SYSTEM_ADJ);
+            state.setVerifiedAdj(ProcessList.INVALID_ADJ);
+        }
 
         if (state.getCurAdj() != state.getSetAdj()) {
             // Hooks for background apps transition
@@ -2753,17 +2786,20 @@ public class OomAdjuster {
                     }
                 }
             }
-            ProcessList.setOomAdj(app.getPid(), app.uid, app.mState.getCurAdj());
-            if (DEBUG_SWITCH || DEBUG_OOM_ADJ || mService.mCurOomAdjUid == app.info.uid) {
-                String msg = "Set " + app.getPid() + " " + app.processName + " adj "
-                        + state.getCurAdj() + ": " + state.getAdjType();
-                reportOomAdjMessageLocked(TAG_OOM_ADJ, msg);
+
+            if (!isLockTasked) {
+                ProcessList.setOomAdj(app.getPid(), app.uid, app.mState.getCurAdj());
+                if (DEBUG_SWITCH || DEBUG_OOM_ADJ || mService.mCurOomAdjUid == app.info.uid) {
+                    String msg = "Set " + app.getPid() + " " + app.processName + " adj "
+                            + state.getCurAdj() + ": " + state.getAdjType();
+                    reportOomAdjMessageLocked(TAG_OOM_ADJ, msg);
+                }
+                state.setSetAdj(state.getCurAdj());
+            	if (uidRec != null) {
+                    uidRec.noteProcAdjChanged();
+                }
+            	state.setVerifiedAdj(ProcessList.INVALID_ADJ);
             }
-            state.setSetAdj(state.getCurAdj());
-            if (uidRec != null) {
-                uidRec.noteProcAdjChanged();
-            }
-            state.setVerifiedAdj(ProcessList.INVALID_ADJ);
         }
 
         final int curSchedGroup = state.getCurrentSchedulingGroup();
