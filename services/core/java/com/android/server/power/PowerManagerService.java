@@ -837,7 +837,6 @@ public final class PowerManagerService extends SystemService
     private boolean mSmartChargingAvailable;
     private boolean mSmartChargingEnabled;
     private boolean mSmartChargingResetStats;
-    private boolean mPowerInputSuspended = false;
     private int mSmartChargingLevel;
     private int mSmartChargingResumeLevel;
     private int mSmartChargingLevelDefaultConfig;
@@ -845,6 +844,16 @@ public final class PowerManagerService extends SystemService
     private static String mPowerInputSuspendSysfsNode;
     private static String mPowerInputSuspendValue;
     private static String mPowerInputResumeValue;
+    // smart charging state 
+    // 0 - disabled
+    // 1 - enabled
+    // 2 - error
+    private int mSmartChargeState = 0;
+    
+    // Cache the state and the value to reduce the frequency of sysfs writes
+    // TODO: Replace with a better caching method
+    private int mPrevSmartChargeState = 0;
+    private String mPrevSmartChargeValue;
 
     /**
      * All times are in milliseconds. These constants are kept synchronized with the system
@@ -2661,35 +2670,51 @@ public final class PowerManagerService extends SystemService
     }
 
     private void updateSmartChargingStatus() {
-        if (!mSmartChargingAvailable) return;
-        if (mPowerInputSuspended && ((mSmartChargingResumeLevel < mSmartChargingLevel &&
-            mBatteryLevel <= mSmartChargingResumeLevel) || !mSmartChargingEnabled)) {
-            try {
-                FileUtils.stringToFile(mPowerInputSuspendSysfsNode, mPowerInputResumeValue);
-                mPowerInputSuspended = false;
-            } catch (IOException e) {
-                Slog.e(TAG, "failed to write to " + mPowerInputSuspendSysfsNode);
-            }
-            return;
-        }
+    	// Update once if smart charging initialization failed due to IOException
+    	if (!mSmartChargingAvailable || mSmartChargeState == 2) return;
+    	// Resume charging if smart charging services is primarily disabled.
+    	boolean writeResumeValue = (mSmartChargingEnabled ? mSmartChargeState == 1
+    				   && mSmartChargingResumeLevel < mSmartChargingLevel 
+    				   && mBatteryLevel != mSmartChargingLevel
+    				   && mBatteryLevel <= mSmartChargingResumeLevel : true);
 
-        if (mSmartChargingEnabled && !mPowerInputSuspended && (mBatteryLevel >= mSmartChargingLevel)) {
-            Slog.i(TAG, "Smart charging reset stats: " + mSmartChargingResetStats);
-            if (mSmartChargingResetStats) {
-                try {
-                     mBatteryStats.resetStatistics();
-                } catch (RemoteException e) {
-                         Slog.e(TAG, "failed to reset battery statistics");
-                }
-            }
+	// Check if the device is using google charger driver
+	// TODO: Replace with appropriate method if other devices 
+	// have similar charger driver nodes setup
+    	boolean isPixelDevice = mPowerInputSuspendSysfsNode.contains("google");
+    	
+    	// Adjust the path for google charger
+        String smartChargeSysfsNode = mPowerInputSuspendSysfsNode + (isPixelDevice ? (writeResumeValue ? "charge_start_level" : "charge_stop_level") : "");
 
-            try {
-                FileUtils.stringToFile(mPowerInputSuspendSysfsNode, mPowerInputSuspendValue);
-                mPowerInputSuspended = true;
-            } catch (IOException e) {
-                    Slog.e(TAG, "failed to write to " + mPowerInputSuspendSysfsNode);
-            }
+	// The resume and value for google charger is different to qcom (0,1)
+	// Hardcode reset the levels to 100 if smart charging service is disabled
+        String smartChargeValue = writeResumeValue ? (isPixelDevice ? String.valueOf(mSmartChargingEnabled ? mSmartChargingResumeLevel : "100") : mPowerInputResumeValue) : 
+        					(isPixelDevice ? String.valueOf(mSmartChargingEnabled ? mSmartChargingLevel : "100") : mPowerInputSuspendValue);
+             
+         try {
+             mSmartChargeState = writeResumeValue ? 0 : 1;
+             // Only reset battery stats if smart charging is running
+             if (mSmartChargeState == 1 && mBatteryLevel >= mSmartChargingLevel && mSmartChargingResetStats) {
+                 Slog.i(TAG, "Smart charging reset stats: " + mSmartChargingResetStats);
+                 mBatteryStats.resetStatistics();
+             }
+             // Avoid redundant sysfs writes to charger node
+             // Only allow redundant write if Smart charging is disabled 
+             // and not equal to default settings.
+             if (mSmartChargeState != mPrevSmartChargeState && smartChargeValue != mPrevSmartChargeValue 
+                 || (mSmartChargingResumeLevel != mSmartChargingResumeLevelDefaultConfig 
+                 && mSmartChargingLevel != mSmartChargingLevelDefaultConfig 
+                 && !mSmartChargingEnabled)) {
+                     FileUtils.stringToFile(smartChargeSysfsNode, smartChargeValue);
+                 }
+         } catch (RemoteException e) {
+             Slog.e(TAG, "failed to reset battery statistics");
+         } catch (IOException e) {
+             Slog.e(TAG, "failed to write to " + mPowerInputSuspendSysfsNode);
+             mSmartChargeState = 2;
         }
+        mPrevSmartChargeState = mSmartChargeState;
+        mPrevSmartChargeValue = smartChargeValue;
     }
 
     @GuardedBy("mLock")
