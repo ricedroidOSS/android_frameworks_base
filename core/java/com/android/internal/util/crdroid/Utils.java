@@ -50,6 +50,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.content.pm.ResolveInfo;
 import android.os.PowerManager;
+import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
@@ -60,6 +61,7 @@ import android.widget.Toast;
 
 import com.android.internal.notification.SystemNotificationChannels;
 import com.android.internal.statusbar.IStatusBarService;
+import android.os.RemoteException;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.R;
 
@@ -137,6 +139,47 @@ public class Utils {
         return needsNav;
     }
     
+   public static void showSystemRestartDialog(Context context) {
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.system_restart_title)
+                .setMessage(R.string.system_restart_message)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        restartAndroid(context);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    public static void restartAndroid(Context context) {
+        new restartAndroidTask(context).execute();
+    }
+
+    private static class restartAndroidTask extends AsyncTask<Void, Void, Void> {
+
+        public restartAndroidTask(Context context) {
+            super();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+          IStatusBarService mBarService = IStatusBarService.Stub.asInterface(
+                ServiceManager.getService(Context.STATUS_BAR_SERVICE));
+            try {
+                 try {
+                   Thread.sleep(1000);
+               } catch (InterruptedException e) {}
+                  try {
+                     mBarService.reboot(false, null);
+                   } catch (RemoteException e) {}
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
    public static void showSettingsRestartDialog(Context context) {
         new AlertDialog.Builder(context)
                 .setTitle(R.string.settings_restart_title)

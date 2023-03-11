@@ -66,4 +66,8 @@
     <string name="aerr_copy">Copy crash log URL</string>
     <string name="url_copy_success">URL copied successfully</string>
     <string name="url_copy_failed">An error occured while uploading the log to Memochō</string>
+
+    <!-- System Reboot -->
+    <string name="system_restart_title">System restart required</string>
+    <string name="system_restart_message">For all the changes to take effect, a system restart is required. Perform system restart now?</string>
 </resources>
