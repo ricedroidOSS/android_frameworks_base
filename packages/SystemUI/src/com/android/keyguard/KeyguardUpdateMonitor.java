@@ -2564,7 +2564,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
                 containsFlag(strongAuth, STRONG_AUTH_REQUIRED_AFTER_BOOT)
                         || containsFlag(strongAuth, STRONG_AUTH_REQUIRED_AFTER_TIMEOUT);
 
-        boolean shouldTriggerActiveUnlock =
+        final boolean shouldTriggerActiveUnlock =
                 (mAuthInterruptActive || triggerActiveUnlockForAssistant || awakeKeyguard)
                         && !mSwitchingUser
                         && !userCanDismissLockScreen
@@ -2574,10 +2574,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
                         && !mKeyguardGoingAway
                         && !mSecureCameraLaunched
                         && !mIsDeviceInPocket;
-
-        if (shouldTriggerActiveUnlock && mFaceUnlockBehavior == FACE_UNLOCK_BEHAVIOR_SWIPE && !mBouncerFullyShown) {
-            shouldTriggerActiveUnlock = false;
-        }
 
         // Aggregate relevant fields for debug logging.
         maybeLogListenerModelData(
@@ -2750,7 +2746,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
 
         // Only listen if this KeyguardUpdateMonitor belongs to the primary user. There is an
         // instance of KeyguardUpdateMonitor for each user but KeyguardUpdateMonitor is user-aware.
-        final boolean shouldListen =
+        boolean shouldListen =
                 (mBouncerFullyShown && !mGoingToSleep
                         || mAuthInterruptActive
                         || mOccludingAppRequestingFace
@@ -2764,6 +2760,10 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
                 && (!mSecureCameraLaunched || mOccludingAppRequestingFace)
                 && !faceAuthenticated
                 && !fpOrFaceIsLockedOut;
+
+        if (shouldListen && mFaceUnlockBehavior == FACE_UNLOCK_BEHAVIOR_SWIPE && !mBouncerFullyShown){
+            shouldListen = false;
+        }
 
         // Aggregate relevant fields for debug logging.
         maybeLogListenerModelData(
